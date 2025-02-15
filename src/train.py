@@ -158,4 +158,4 @@ if __name__ == "__main__":
     val_dataset = TextDataset(val_texts, chunk_size=trainer.max_length)
 
     # Train the model
-    trainer.train(train_dataset, val_dataset, num_epochs=3)
+    trainer.train(train_dataset, val_dataset, num_epochs=10)
