@@ -93,3 +93,35 @@ if __name__ == "__main__":
         original_model_name="gpt2",
         distilled_model_path="distilled_model\student_model.pth"
     )
+
+    # hellaswag score
+    import matplotlib.pyplot as plt
+    import re  
+
+    with open(r"..\logs\hellaswag", "r") as f:
+        output = [line.strip() for line in f.readlines()]
+
+    # Data extraction using regular expressions
+    x_values = []
+    y_values = []
+
+    for line in output:  # Now we iterate through the *list* of lines
+        match = re.match(r'(\d+)\s+\w+\s+([\d.]+)', line)
+        if match:
+            x_values.append(int(match.group(1)))  # Index (convert to integer)
+            y_values.append(float(match.group(2)))  # Score (convert to float)
+
+    plt.plot(x_values, y_values, marker='o', linestyle='-', label='HellaSwag Score') 
+
+    target_value = 0.2955  
+    plt.axhline(y=target_value, color='r', linestyle='--', label=f'Target: {target_value}')
+
+    # Customize the plot
+    plt.xlabel('Index')
+    plt.ylabel('Score')
+    plt.title('HellaSwag Score over Time')
+    plt.grid(False)  
+    plt.legend()   
+
+    # Show the plot
+    plt.show()

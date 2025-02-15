@@ -134,9 +134,10 @@ def test_distillation():
 if __name__ == "__main__":
     from trainer import DistillationTrainer 
 
-    trainer = test_distillation()
-    import sys
-    sys.exit(1)
+    # # For debugging
+    # trainer = test_distillation()
+    # import sys
+    # sys.exit(1)
     
     # Initialize trainer
     trainer = DistillationTrainer(
@@ -157,4 +158,4 @@ if __name__ == "__main__":
     val_dataset = TextDataset(val_texts, chunk_size=trainer.max_length)
 
     # Train the model
-    trainer.train(train_dataset, val_dataset, num_epochs=3)
+    trainer.train(train_dataset, val_dataset, num_epochs=1)

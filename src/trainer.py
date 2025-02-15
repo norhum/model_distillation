@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer, get_scheduler
+from hellaswag import iterate_examples, render_example, get_most_likely_row
 from tqdm import tqdm
 import wandb
 from model import GPT  
@@ -235,6 +236,33 @@ class DistillationTrainer:
                 'avg_train_loss': avg_train_loss,
                 'avg_eval_loss': avg_eval_loss
             })
+
+            # for every epoch, evaluate hellaswag and log the data instead of returning it at the end. 
+            num_correct_norm = 0
+            num_total = 0
+            for i, example in enumerate(iterate_examples("val")):
+                # render the example into tokens and labels
+                _, tokens, mask, label = render_example(example)
+                tokens = tokens.to(self.device)
+                mask = mask.to(self.device)
+                # get the logits
+                with torch.no_grad():
+                    with torch.autocast(device_type=self.device, dtype=torch.bfloat16):
+                        logits = self.student_model(tokens)["logits"]
+                    pred_norm = get_most_likely_row(tokens, mask, logits)
+                num_total += 1
+                num_correct_norm += int(pred_norm == label)
+
+            # reduce the stats across all processes
+            num_total = int(num_total)  # Just ensure it's an integer
+            num_correct_norm = int(num_correct_norm)  # Convert to int if needed
+
+            acc_norm = num_correct_norm / num_total
+    
+            print(f"HellaSwag accuracy: {num_correct_norm}/{num_total}={acc_norm:.4f}")
+            print()
+            with open(r"logs/hellaswag", "a") as f:
+                f.write(f"{epoch} hellaswag {acc_norm:.4f}\n")
             
             print(f'Epoch {epoch + 1}:')
             print(f'Average Training Loss: {avg_train_loss:.4f}')

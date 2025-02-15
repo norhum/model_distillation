@@ -1,3 +1,5 @@
 __pycache__/
 wandb/
 distilled_model/
+hellaswag/
+logs/
