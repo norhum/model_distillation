@@ -1,6 +1,7 @@
 import datasets
 from torch.utils.data import Dataset
 import random
+import torch
 
 class TextDataset(Dataset):
     def __init__(self, texts, chunk_size=128):
@@ -75,31 +76,6 @@ def prepare_custom_data(file_path, split_ratio=0.9):
     
     return train_data, val_data
 
-# Updated main script
-if __name__ == "__main__":
-    from src.trainer import DistillationTrainer  # Import the previous code
-    
-    # Initialize trainer
-    trainer = DistillationTrainer(
-        teacher_model_name="EleutherAI/gpt-neo-2.7B",
-        student_model_name="gpt2",
-        temperature=2.0,
-        alpha=0.5,
-        learning_rate=1e-4,
-        max_length=128,
-        batch_size=8
-    )
-    
-    # Prepare data
-    train_texts, val_texts = prepare_wikitext_data(split_ratio=0.9)
-    
-    # Create datasets
-    train_dataset = TextDataset(train_texts, chunk_size=trainer.max_length)
-    val_dataset = TextDataset(val_texts, chunk_size=trainer.max_length)
-    
-    # Train the model
-    trainer.train(train_dataset, val_dataset, num_epochs=3)
-
 def get_sample_texts():
     """
     Get a small sample of texts for testing
@@ -153,3 +129,32 @@ def test_distillation():
     trainer.train(train_dataset, val_dataset, num_epochs=1)
     
     return trainer
+
+# Updated main script
+if __name__ == "__main__":
+    from trainer import DistillationTrainer 
+
+    trainer = test_distillation()
+    import sys
+    sys.exit(1)
+    
+    # Initialize trainer
+    trainer = DistillationTrainer(
+        teacher_model_name="EleutherAI/gpt-neo-2.7B",
+        student_model_name="gpt2",
+        temperature=2.0,
+        alpha=0.5,
+        learning_rate=3e-4,
+        max_length=128,
+        batch_size=8
+    )
+    
+    # Prepare data
+    train_texts, val_texts = prepare_wikitext_data(split_ratio=0.9)
+    
+    # Create datasets
+    train_dataset = TextDataset(train_texts, chunk_size=trainer.max_length)
+    val_dataset = TextDataset(val_texts, chunk_size=trainer.max_length)
+
+    # Train the model
+    trainer.train(train_dataset, val_dataset, num_epochs=3)

@@ -4,7 +4,10 @@ from torch.utils.data import DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer, get_scheduler
 from tqdm import tqdm
 import wandb
-from model import GPT  # Assuming this is your custom GPT implementation
+from model import GPT  
+import os
+import json
+from datetime import datetime
 
 class DistillationTrainer:
     def __init__(
@@ -18,6 +21,7 @@ class DistillationTrainer:
         batch_size: int = 8
     ):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.teacher_model_name = teacher_model_name
         self.temperature = temperature
         self.alpha = alpha
         self.max_length = max_length
@@ -128,6 +132,29 @@ class DistillationTrainer:
             'distillation_loss': dist_loss.item(),
             'ce_loss': ce_loss.item()
         }
+    
+    def save_model(self, output_dir="./distilled_model"):
+        """Save the distilled model and tokenizer"""
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        
+        print(f"Saving model to {output_dir}")
+        torch.save(self.student_model.state_dict(), os.path.join(output_dir, "student_model.pth"))
+        self.tokenizer.save_pretrained(output_dir)
+        
+        # Save config file with distillation parameters
+        config = {
+            "teacher_model": self.teacher_model_name,
+            "temperature": self.temperature,
+            "alpha": self.alpha,
+            "max_length": self.max_length,
+            "distillation_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        with open(os.path.join(output_dir, "distillation_config.json"), "w") as f:
+            json.dump(config, f, indent=2)
+        
+        return output_dir
 
     def train(self, train_texts, eval_texts, num_epochs=3):
         # Initialize wandb for tracking
@@ -214,6 +241,8 @@ class DistillationTrainer:
             print(f'Average Evaluation Loss: {avg_eval_loss:.4f}')
             
         wandb.finish()
+        # Save model after training
+        self.save_model("./distilled_model")
 
 # Example usage
 if __name__ == "__main__":
