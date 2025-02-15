@@ -1,5 +1,6 @@
 import torch
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from transformers import GPT2Tokenizer
+from model import GPT
 import time
 from tqdm import tqdm
 import numpy as np
@@ -14,18 +15,16 @@ def compare_models(original_model_name="gpt2", distilled_model_path="path/to/dis
     tokenizer.pad_token = tokenizer.eos_token
     
     print("Loading original model...")
-    original_model = GPT2LMHeadModel.from_pretrained(original_model_name)
+    original_model = GPT.from_pretrained(original_model_name)
     
     print("Loading distilled model...")
-    distilled_model = GPT2LMHeadModel.from_pretrained(distilled_model_path)
-    
+    distilled_model = GPT.from_pretrained(original_model_name)  # Initialize a fresh model with the correct config
+    distilled_model.load_state_dict(torch.load(distilled_model_path))  # Load weights
+    distilled_model.eval()  # Set to evaluation mode if needed
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     original_model.to(device)
     distilled_model.to(device)
-    
-    # Set models to evaluation mode
-    original_model.eval()
-    distilled_model.eval()
     
     # Test prompts
     test_prompts = [
@@ -54,11 +53,8 @@ def compare_models(original_model_name="gpt2", distilled_model_path="path/to/dis
         with torch.no_grad():
             original_output = original_model.generate(
                 inputs["input_ids"],
-                max_length=100,
+                max_length=30,
                 num_return_sequences=1,
-                temperature=0.7,
-                top_p=0.9,
-                pad_token_id=tokenizer.eos_token_id
             )
         torch.cuda.synchronize()
         original_time = time.time() - start_time
@@ -69,18 +65,17 @@ def compare_models(original_model_name="gpt2", distilled_model_path="path/to/dis
         with torch.no_grad():
             distilled_output = distilled_model.generate(
                 inputs["input_ids"],
-                max_length=100,
+                max_length=30,
                 num_return_sequences=1,
-                temperature=0.7,
-                top_p=0.9,
-                pad_token_id=tokenizer.eos_token_id
             )
         torch.cuda.synchronize()
         distilled_time = time.time() - start_time
-        
+
         # Decode outputs
-        original_text = tokenizer.decode(original_output[0], skip_special_tokens=True)
-        distilled_text = tokenizer.decode(distilled_output[0], skip_special_tokens=True)
+        original_output = original_output.squeeze(0)  # Remove batch dim -> shape (1, 106)
+        original_text = tokenizer.decode(original_output[0].tolist(), skip_special_tokens=True)
+        distilled_output = distilled_output.squeeze(0) 
+        distilled_text = tokenizer.decode(distilled_output[0].tolist(), skip_special_tokens=True)
         
         results["speed_comparison"].append({
             "prompt": prompt,
@@ -137,5 +132,5 @@ if __name__ == "__main__":
     # Replace with your distilled model path
     results = compare_models(
         original_model_name="gpt2",
-        distilled_model_path="./distilled_gpt2"
+        distilled_model_path="distilled_model\student_model.pth"
     )

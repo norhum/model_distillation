@@ -161,6 +161,37 @@ class GPT(nn.Module):
             "logits" : logits,
             "loss" : loss
         }
+    
+    def generate(self, input_ids, max_length=30, num_return_sequences=1):
+        """ Implements autoregressive text generation with top-p sampling """
+        self.eval()  # Set model to evaluation mode
+        generated_sequences = []
+
+        with torch.no_grad():
+            for _ in range(num_return_sequences):  # Generate multiple sequences
+                generated = input_ids.clone()
+                
+                while generated.size(1) < max_length:
+                    # forward the model to get the logits
+                    with torch.no_grad():
+                        logits = self.forward(generated)["logits"] # (B, T, vocab_size)
+                        # take the logits at the last position
+                        logits = logits[:, -1, :] # (B, vocab_size)
+                        # get the probabilities
+                        probs = F.softmax(logits, dim=-1)
+                        # do top-k sampling of 50 (huggingface pipeline default)
+                        # topk_probs here becomes (5, 50), topk_indices is (5, 50)
+                        topk_probs, topk_indices = torch.topk(probs, 50, dim=-1)
+                        # select a token from the top-k probabilities
+                        ix = torch.multinomial(topk_probs, num_samples=1) # (B, 1)
+                        # gather the corresponding indices
+                        xcol = torch.gather(topk_indices, -1, ix) # (B, 1)
+                        # append to the sequence
+                        generated = torch.cat((generated, xcol), dim=1)
+
+                generated_sequences.append(generated)
+
+        return torch.stack(generated_sequences, dim=0)  # Shape: (num_return_sequences, batch_size, seq_len)
 
     @classmethod
     def from_pretrained(cls, model_type):
