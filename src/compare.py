@@ -98,7 +98,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import re  
 
-    with open(r"..\logs\hellaswag", "r") as f:
+    with open(r"logs\hellaswag", "r") as f:
         output = [line.strip() for line in f.readlines()]
 
     # Data extraction using regular expressions
