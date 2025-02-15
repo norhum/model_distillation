@@ -141,7 +141,8 @@ if __name__ == "__main__":
     
     # Initialize trainer
     trainer = DistillationTrainer(
-        teacher_model_name="EleutherAI/gpt-neo-2.7B",
+        # teacher_model_name="EleutherAI/gpt-neo-2.7B",
+        teacher_model_name="EleutherAI/gpt-j-6B",
         student_model_name="gpt2",
         temperature=2.0,
         alpha=0.5,
