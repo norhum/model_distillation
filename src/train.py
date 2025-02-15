@@ -141,8 +141,7 @@ if __name__ == "__main__":
     
     # Initialize trainer
     trainer = DistillationTrainer(
-        # teacher_model_name="EleutherAI/gpt-neo-2.7B",
-        teacher_model_name="EleutherAI/gpt-j-6B",
+        teacher_model_name="EleutherAI/gpt-neo-2.7B",
         student_model_name="gpt2",
         temperature=2.0,
         alpha=0.5,
@@ -159,4 +158,4 @@ if __name__ == "__main__":
     val_dataset = TextDataset(val_texts, chunk_size=trainer.max_length)
 
     # Train the model
-    trainer.train(train_dataset, val_dataset, num_epochs=1)
+    trainer.train(train_dataset, val_dataset, num_epochs=3)
