@@ -143,11 +143,11 @@ if __name__ == "__main__":
     trainer = DistillationTrainer(
         teacher_model_name="EleutherAI/gpt-neo-2.7B",
         student_model_name="gpt2",
-        temperature=2.0,
-        alpha=0.5,
-        learning_rate=3e-4,
+        temperature=1.5,
+        alpha=0.7,
+        learning_rate=1e-4,
         max_length=128,
-        batch_size=8
+        batch_size=32
     )
     
     # Prepare data
