@@ -76,7 +76,7 @@ def iterate_examples(split, data_dir="data"):
 def render_example(example, tokenizer, max_seq_length: int = 1024) -> Tuple[torch.LongTensor,
                                                          torch.LongTensor,
                                                          torch.LongTensor,
-                                                         int]:
+                                                         torch.LongTensor]:  # Correct return type hint
     """Tokenizes a HellaSwag example."""
     ctx_a = example["ctx_a"]
     ctx_b = example["ctx_b"]
@@ -93,7 +93,7 @@ def render_example(example, tokenizer, max_seq_length: int = 1024) -> Tuple[torc
     attention_mask = encoded['attention_mask']
 
     # Return as a tuple of tensors, as expected in the original notebook
-    return input_ids, attention_mask, label
+    return input_ids, attention_mask, torch.tensor(label) # Cast label to Tensor
 
 def get_most_likely_row(input_ids, attention_mask, logits, return_probs = False):
     padding_id = 0

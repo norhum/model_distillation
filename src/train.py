@@ -1,4 +1,3 @@
-#train.py
 import datasets
 from torch.utils.data import Dataset, DataLoader, ConcatDataset, Subset
 import torch
