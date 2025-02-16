@@ -1,5 +1,5 @@
 """
-Original code source 
+Original code source
 https://github.com/karpathy/build-nanogpt/blob/master/hellaswag.py
 
 Downloads and evaluates HellaSwag in Python.
@@ -36,6 +36,7 @@ from tqdm import tqdm
 import torch
 from torch.nn import functional as F
 from transformers import GPT2LMHeadModel, PreTrainedTokenizer
+from torch.utils.data import Dataset
 
 # -----------------------------------------------------------------------------
 DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "hellaswag")
@@ -190,44 +191,43 @@ def evaluate(model_type, device):
                 print(f"{i} (loss: {avg_loss[i].item():.4f}) {end}")
             print(f"predicted: {pred_norm}, actual: {label}")
 
-class HellaSwagDataset(torch.utils.data.Dataset):
+class HellaSwagDataset(Dataset):
     def __init__(self, data, tokenizer, max_seq_length):
         self.data = data
         self.tokenizer = tokenizer
         self.max_seq_length = max_seq_length
+        self.processed_data = []
+        self._preprocess()  # Preprocess data during initialization
+
+    def _preprocess(self):
+        for item in self.data:
+            context = item['ctx']
+            endings = item['endings']
+            label = item['label']
+
+            for i, ending in enumerate(endings):
+                text = context + " " + ending
+                encoded = self.tokenizer(
+                    text,
+                    truncation=True,
+                    max_length=self.max_seq_length,
+                    padding='max_length',
+                    return_tensors='pt'
+                )
+                # Store the single-choice example with a binary label
+                self.processed_data.append({
+                    'input_ids': encoded['input_ids'].squeeze(),
+                    'attention_mask': encoded['attention_mask'].squeeze(),
+                    'label': torch.tensor(1 if i == label else 0)  # Binary label
+                })
 
     def __len__(self):
-        return len(self.data)
+        return len(self.processed_data)
+
 
     def __getitem__(self, idx):
-        item = self.data[idx]
-        context = item['ctx']
-        endings = item['endings']
-        label = item['label']
+      return self.processed_data[idx]
 
-        # Combine context and each ending, then tokenize
-        input_ids_list = []
-        attention_mask_list = []
-        labels = []
-
-        for i, ending in enumerate(endings):
-            text = context + " " + ending
-            encoded = self.tokenizer(
-                text,
-                truncation=True,
-                max_length=self.max_seq_length,
-                padding='max_length',
-                return_tensors='pt'
-            )
-            input_ids_list.append(encoded['input_ids'].squeeze())
-            attention_mask_list.append(encoded['attention_mask'].squeeze())
-            labels.append(1 if i == label else 0)  # One-hot encoding for the correct ending
-
-        return {
-            'input_ids': torch.stack(input_ids_list),
-            'attention_mask': torch.stack(attention_mask_list),
-            'label': torch.tensor(labels)
-        }
 def load_hellaswag(split: str, tokenizer: PreTrainedTokenizer, max_seq_length: int = 128):
     """Loads the HellaSwag dataset for the given split."""
 
