@@ -147,7 +147,7 @@ if __name__ == "__main__":
         alpha=0.7,
         learning_rate=1e-4,
         max_length=128,
-        batch_size=32
+        batch_size=16
     )
     
     # Prepare data
