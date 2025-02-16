@@ -1,3 +1,4 @@
+# train.py
 import datasets
 from torch.utils.data import Dataset, DataLoader, ConcatDataset, Subset
 import torch
@@ -9,8 +10,8 @@ import wandb
 import os
 import json
 from datetime import datetime
-from model import GPT
-from hellaswag import load_hellaswag, iterate_examples, render_example, get_most_likely_row
+from model import GPT  
+from hellaswag import iterate_examples, render_example, get_most_likely_row, load_hellaswag
 
 class OpenBookQADataset(Dataset):
     def __init__(self, dataset, tokenizer, max_length=128):
@@ -187,6 +188,8 @@ class DistillationTrainer:
         train_dataloader = DataLoader(combined_dataset, batch_size=self.batch_size, shuffle=True)
         val_dataloader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
 
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
         num_training_steps = len(train_dataloader) * num_epochs
         lr_scheduler = get_scheduler(
             name="linear",
@@ -248,17 +251,24 @@ class DistillationTrainer:
             num_total = 0
             self.student_model.eval()
             for i, example in enumerate(iterate_examples("val")):
-                _, tokens, mask, label = render_example(example, self.tokenizer)
-                tokens = tokens.to(self.device)
-                mask = mask.to(self.device)
+                # render the example into tokens and labels
+                _, tokens, mask, label = render_example(example)
+                tokens = tokens.to(device)
+                mask = mask.to(device)
+                # get the logits
                 with torch.no_grad():
-                    with torch.autocast(device_type=self.device, dtype=torch.bfloat16):
+                    with torch.autocast(device_type=device, dtype=torch.bfloat16):
                         logits = self.student_model(tokens)["logits"]
                     pred_norm = get_most_likely_row(tokens, mask, logits)
                 num_total += 1
                 num_correct_norm += int(pred_norm == label)
 
+            # reduce the stats across all processes
+            num_total = int(num_total)  # Just ensure it's an integer
+            num_correct_norm = int(num_correct_norm)  # Convert to int if needed
+
             acc_norm = num_correct_norm / num_total
+    
             print(f"HellaSwag accuracy: {num_correct_norm}/{num_total}={acc_norm:.4f}")
             print()
             os.makedirs("logs", exist_ok=True)
@@ -287,5 +297,5 @@ if __name__ == "__main__":
     train_dataset, val_dataset = prepare_openbookqa_data(trainer.tokenizer, max_length=trainer.max_length)
     hellaswag_train_dataset = load_hellaswag("train", trainer.tokenizer, max_seq_length=trainer.max_length)
     trainer.train(train_dataset, val_dataset, hellaswag_train_dataset, num_epochs=5)
-    trainer.save_model("distilled_model.pt")
+    trainer.save_model("distilled_model")
     print("Training complete. Model saved.")
