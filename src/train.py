@@ -1,5 +1,5 @@
 import datasets
-from torch.utils.data import Dataset, DataLoader  # Import DataLoader here
+from torch.utils.data import Dataset, DataLoader  
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -81,6 +81,7 @@ class DistillationTrainer:
             torch_dtype=torch.float16
         )
         self.teacher_model.eval()
+        
         for param in self.teacher_model.parameters():
             param.requires_grad = False
 
@@ -88,9 +89,8 @@ class DistillationTrainer:
         self.student_model = GPT.from_pretrained(student_model_name)
         self.student_model.to(self.device)
 
-        # Freeze layers if specified
         if self.freeze_layers:
-            for i in range(6):  # Freeze the first 6 layers (adjust as needed)
+            for i in range(6):  
                 for param in self.student_model.transformer.h[i].parameters():
                     param.requires_grad = False
 
@@ -105,6 +105,7 @@ class DistillationTrainer:
         input_ids = batch['input_ids'].to(self.device)
         attention_mask = batch['attention_mask'].to(self.device)
         labels = batch['label'].to(self.device)
+
         return input_ids, attention_mask, labels
 
     def train_step(self, input_ids, attention_mask, labels):
@@ -126,6 +127,7 @@ class DistillationTrainer:
         loss = self.alpha * distillation_loss + (1 - self.alpha) * ce_loss
         loss.backward()
         self.optimizer.step()
+
         return {'total_loss': loss.item(), 'distillation_loss': distillation_loss.item(), 'ce_loss': ce_loss.item()}
 
     def save_model(self, output_dir="./distilled_model"):
@@ -145,11 +147,13 @@ class DistillationTrainer:
         }
         with open(os.path.join(output_dir, "distillation_config.json"), "w") as f:
             json.dump(config, f, indent=2)
+
         return output_dir
 
     def evaluate(self, val_dataloader):
       self.student_model.eval()
       total_eval_accuracy = 0
+
       with torch.no_grad():
           for batch in tqdm(val_dataloader, desc="Evaluating"):
               input_ids, attention_mask, labels = self.prepare_batch(batch)
@@ -162,8 +166,10 @@ class DistillationTrainer:
               total_eval_accuracy += correct_predictions / reshaped_predictions.size(0)
       avg_val_accuracy = total_eval_accuracy / len(val_dataloader)
       print(f"Validation Accuracy: {avg_val_accuracy:.4f}")
+
       return avg_val_accuracy
-    def train(self, train_dataset, val_dataset, num_epochs=2):  # Reduced epochs
+    
+    def train(self, train_dataset, val_dataset, num_epochs=2):  
         train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         val_dataloader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
         num_training_steps = len(train_dataloader) * num_epochs
@@ -173,6 +179,7 @@ class DistillationTrainer:
             num_warmup_steps=0,
             num_training_steps=num_training_steps
         )
+
         wandb.init(project="model-distillation", config={
             "teacher_model": self.teacher_model_name,
             "student_model": self.student_model_name,
@@ -184,6 +191,7 @@ class DistillationTrainer:
             "num_epochs": num_epochs,
             "freeze_layer": self.freeze_layers
         })
+
         for epoch in range(num_epochs):
             self.student_model.train()
             total_train_loss = 0
@@ -200,12 +208,14 @@ class DistillationTrainer:
                 })
                 wandb.log(step_losses)
             avg_train_loss = total_train_loss / len(train_dataloader)
+
             print(f"Average training loss: {avg_train_loss:.4f}")
             avg_val_accuracy = self.evaluate(val_dataloader)
             wandb.log({"epoch": epoch + 1, "avg_train_loss": avg_train_loss, "avg_val_accuracy": avg_val_accuracy})
             num_correct_norm = 0
             num_total = 0
             self.student_model.eval()
+
             for i, example in enumerate(iterate_examples("val")):
                 _, tokens, mask, label = render_example(example)
                 tokens = tokens.to(self.device)
@@ -219,6 +229,7 @@ class DistillationTrainer:
             num_total = int(num_total)
             num_correct_norm = int(num_correct_norm)
             acc_norm = num_correct_norm / num_total
+
             print(f"HellaSwag accuracy: {num_correct_norm}/{num_total}={acc_norm:.4f}")
             print()
             os.makedirs("logs", exist_ok=True)
@@ -237,13 +248,13 @@ if __name__ == "__main__":
         student_model_name="gpt2",
         temperature=1.5,
         alpha=0.7,
-        learning_rate=1e-5,  # Lower learning rate
+        learning_rate=1e-5, 
         max_length=128,
         batch_size=8,
         freeze_layers=True #freeze first 6 layers
     )
 
     train_dataset, val_dataset = prepare_openbookqa_data(trainer.tokenizer, max_length=trainer.max_length)
-    trainer.train(train_dataset, val_dataset, num_epochs=2)  # Fewer epochs
+    trainer.train(train_dataset, val_dataset, num_epochs=2) 
     trainer.save_model("distilled_model.pt")
     print("Training complete. Model saved.")
