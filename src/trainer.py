@@ -261,6 +261,8 @@ class DistillationTrainer:
     
             print(f"HellaSwag accuracy: {num_correct_norm}/{num_total}={acc_norm:.4f}")
             print()
+            # Ensure the "logs" directory exists
+            os.makedirs("logs", exist_ok=True)
             with open(r"logs/hellaswag", "a") as f:
                 f.write(f"{epoch} hellaswag {acc_norm:.4f}\n")
             
