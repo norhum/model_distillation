@@ -296,6 +296,6 @@ if __name__ == "__main__":
 
     train_dataset, val_dataset = prepare_openbookqa_data(trainer.tokenizer, max_length=trainer.max_length)
     hellaswag_train_dataset = load_hellaswag("train", trainer.tokenizer, max_seq_length=trainer.max_length)
-    trainer.train(train_dataset, val_dataset, hellaswag_train_dataset, num_epochs=5)
+    trainer.train(train_dataset, val_dataset, hellaswag_train_dataset, num_epochs=3)
     trainer.save_model("distilled_model")
     print("Training complete. Model saved.")
