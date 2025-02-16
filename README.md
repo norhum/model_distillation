@@ -24,11 +24,3 @@ HellaSwag is a test that checks if a model understands common sense. It gives th
     *   It also tries to *match how sure* the teacher was about each word. This is the "distillation" part.  It learns from the teacher's "soft targets."
 3.  **Softening the Answers:** The answers (called "logits") from both models are divided by a temperature value.  The higher the temperature, the "softer" (less confident) the predictions become.  This helps the student learn.
 
-## Results (Will be updated)
-
-We'll update this after we train the student model.
-
-| Model                 | HellaSwag Score |
-| --------------------- | --------------- |
-| Original GPT-2        | 0.2955          |
-| Smarter GPT-2 (Ours)  | *[To be added]* |
