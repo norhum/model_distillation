@@ -3,3 +3,4 @@ wandb/
 distilled_model/
 hellaswag/
 logs/
+data/
