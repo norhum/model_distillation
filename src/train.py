@@ -62,7 +62,7 @@ class DistillationTrainer:
         max_length: int = 128,
         batch_size: int = 8,
         freeze_layers: bool = True,
-        hellaswag_weight: float = 0.2,
+        hellaswag_weight: float = 0.8,
         curriculum_epochs: int = 3
     ):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -296,6 +296,6 @@ if __name__ == "__main__":
 
     train_dataset, val_dataset = prepare_openbookqa_data(trainer.tokenizer, max_length=trainer.max_length)
     hellaswag_train_dataset = load_hellaswag("train", trainer.tokenizer, max_seq_length=trainer.max_length)
-    trainer.train(train_dataset, val_dataset, hellaswag_train_dataset, num_epochs=3)
+    trainer.train(train_dataset, val_dataset, hellaswag_train_dataset, num_epochs=10)
     trainer.save_model("distilled_model")
     print("Training complete. Model saved.")
